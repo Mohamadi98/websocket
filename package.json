@@ -1,0 +1,23 @@
+{
+  "name": "websocket",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/Mohamadi98/websocket#readme",
+  "bugs": {
+    "url": "https://github.com/Mohamadi98/websocket/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mohamadi98/websocket.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "http": "^0.0.1-security"
+  }
+}
