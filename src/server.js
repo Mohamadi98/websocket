@@ -28,6 +28,45 @@ const OPC = { CONT:0x0, TEXT:0x1, BIN:0x2, CLOSE:0x8, PING:0x9, PONG:0xA };
 
 const WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
+function onFrame(websocketFrame) {
+    switch(websocketFrame) {
+        case OPC.TEXT: 
+            textBuf = textBuf ? Buffer.concat([textBuf, websocketFrame.payload]): websocketFrame.payload
+            if(websocketFrame.fin) {
+                const message = textBuf.toString('utf8')
+                console.log(`[Client Message]: ${message}`)
+                //TODO: call the send server response function
+                textBuf = null
+            }
+            break
+        case OPC.CONT: 
+            if(!textBuf) textBuf = Buffer.alloc(0)
+            textBuf = Buffer.concat([textBuf, websocketFrame.payload])
+            if(websocketFrame.fin) {
+                const message = textBuf.toString('utf8')
+                console.log(`[Client Message]: ${message}`)
+                //TODO: call the send server response function
+                textBuf = null
+            }
+            break
+        case OPC.BIN:
+            console.log(`[client BIN] ${websocketFrame.payload.length} bytes`);
+            send(OPC.BIN, websocketFrame.payload); // optional echo
+            break
+        case OPC.PING:
+           //TODO: call the send server response function with a PONG
+           break;
+         case OPC.CLOSE:
+           // Echo CLOSE and end TCP socket
+           //TODO: call the send server response function with CLOSE
+           socket.end();
+           break;
+         default:
+           // ignore reserved/unknown
+           break;
+    }
+}
+
 function parseFrames(buffer) {
     let off = 0
 
@@ -80,7 +119,7 @@ function parseFrames(buffer) {
             "opcode": opcode,
             "payload": payload
         }
-        //TODO: call the websocket frame processing function
+        onFrame(frame)
 
         //moving to the last buffer bit, incase there are other frames to parse
         off = pos + payloadLength
