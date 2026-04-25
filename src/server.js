@@ -28,6 +28,34 @@ const OPC = { CONT:0x0, TEXT:0x1, BIN:0x2, CLOSE:0x8, PING:0x9, PONG:0xA };
 
 const WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
+//builds a websocket frame to be sent from the server 
+function buildFrame(opcode, payload = Buffer.alloc(0), fin = true) {
+    //constructs the first byte of the frame
+    //this (opcode & 0x0f) puts the opcode in the lower 4 bits 
+    const byte1 = (fin ? 0x80 : 0x00) | (opcode & 0x0f)
+    const payloadLength = payload.length
+    //in this case the header is just 2 bytes, the payload length can be represented in byte 2
+    if(payloadLength < 126) {
+        //Buffer.from() creates a buffer of bytes from existing data, in this case from the first byte and the payload length
+        //resulting in a header of size 2 bytes, which is then concatenated with the actual payload data
+        return Buffer.concat([Buffer.from([byte1, payloadLength]), payload])
+    } else if(payloadLength <= 0xffff) { //payload length does not exceed 65536 bits
+        const header = Buffer.alloc(4)
+        header[0] = byte1
+        header[1] = 126
+        //writes the payload length in the header buffer after skipping 2 bytes
+        header.writeInt16BE(payloadLength, 2)
+        return Buffer.concat([header, payload])
+    } else {
+        const header = Buffer.alloc(10)
+        header[0] = byte1
+        header[1] = 127
+        header.writeInt32BE(0, 2)
+        header.writeInt32BE(payloadLength, 6)
+        return Buffer.concat(header, payload)
+    }
+}
+
 function onFrame(websocketFrame) {
     switch(websocketFrame) {
         case OPC.TEXT: 
@@ -67,6 +95,7 @@ function onFrame(websocketFrame) {
     }
 }
 
+//Large buffers may have more than one websocket frames
 function parseFrames(buffer) {
     let off = 0
 
