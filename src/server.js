@@ -29,16 +29,21 @@ const OPC = { CONT:0x0, TEXT:0x1, BIN:0x2, CLOSE:0x8, PING:0x9, PONG:0xA };
 const WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
 //builds a websocket frame to be sent from the server 
-function buildFrame(opcode, payload = Buffer.alloc(0), fin = true) {
+function buildFrame({ opcode, payload = Buffer.alloc(0), fin = true }) {
     //constructs the first byte of the frame
     //this (opcode & 0x0f) puts the opcode in the lower 4 bits 
     const byte1 = (fin ? 0x80 : 0x00) | (opcode & 0x0f)
+    console.log(byte1)
     const payloadLength = payload.length
     //in this case the header is just 2 bytes, the payload length can be represented in byte 2
     if(payloadLength < 126) {
         //Buffer.from() creates a buffer of bytes from existing data, in this case from the first byte and the payload length
         //resulting in a header of size 2 bytes, which is then concatenated with the actual payload data
-        return Buffer.concat([Buffer.from([byte1, payloadLength]), payload])
+        console.log("about to leave buildFrame")
+        // return Buffer.concat([Buffer.from([byte1, payloadLength]), payload])
+        const ret = Buffer.concat([Buffer.from([byte1, payloadLength]), payload])
+        console.log(ret)
+        return ret
     } else if(payloadLength <= 0xffff) { //payload length does not exceed 65536 bits
         const header = Buffer.alloc(4)
         header[0] = byte1
@@ -56,47 +61,8 @@ function buildFrame(opcode, payload = Buffer.alloc(0), fin = true) {
     }
 }
 
-function onFrame(websocketFrame) {
-    switch(websocketFrame) {
-        case OPC.TEXT: 
-            textBuf = textBuf ? Buffer.concat([textBuf, websocketFrame.payload]): websocketFrame.payload
-            if(websocketFrame.fin) {
-                const message = textBuf.toString('utf8')
-                console.log(`[Client Message]: ${message}`)
-                //TODO: call the send server response function
-                textBuf = null
-            }
-            break
-        case OPC.CONT: 
-            if(!textBuf) textBuf = Buffer.alloc(0)
-            textBuf = Buffer.concat([textBuf, websocketFrame.payload])
-            if(websocketFrame.fin) {
-                const message = textBuf.toString('utf8')
-                console.log(`[Client Message]: ${message}`)
-                //TODO: call the send server response function
-                textBuf = null
-            }
-            break
-        case OPC.BIN:
-            console.log(`[client BIN] ${websocketFrame.payload.length} bytes`);
-            send(OPC.BIN, websocketFrame.payload); // optional echo
-            break
-        case OPC.PING:
-           //TODO: call the send server response function with a PONG
-           break;
-         case OPC.CLOSE:
-           // Echo CLOSE and end TCP socket
-           //TODO: call the send server response function with CLOSE
-           socket.end();
-           break;
-         default:
-           // ignore reserved/unknown
-           break;
-    }
-}
-
 //Large buffers may have more than one websocket frames
-function parseFrames(buffer) {
+function parseFrames(buffer, onFrame) {
     let off = 0
 
     while(buffer.length - off >= 2) {
@@ -195,6 +161,77 @@ server.on("upgrade", (req, socket, head) => {
     // If there were leftover bytes from the HTTP parser (head), prepend them
     let leftover = head && head.length ? Buffer.from(head) : Buffer.alloc(0);
     let textBuf = null;
+
+    //declare send function
+    const send = (opcode, payload) => socket.write(buildFrame({ "opcode": opcode, "payload": payload }))
+
+    const onFrame = (websocketFrame) => {
+        switch(websocketFrame.opcode) {
+            case OPC.TEXT: {
+                textBuf = textBuf ? Buffer.concat([textBuf, websocketFrame.payload]): websocketFrame.payload
+                if(websocketFrame.fin) {
+                    const message = textBuf.toString('utf8')
+                    console.log(`[Client Message]: ${message}`)
+                    send(OPC.TEXT, Buffer.from(message, 'utf8')); // echo back
+                    textBuf = null
+                }
+                break
+            }
+            case OPC.CONT: {
+                if(!textBuf) textBuf = Buffer.alloc(0)
+                textBuf = Buffer.concat([textBuf, websocketFrame.payload])
+                if(websocketFrame.fin) {
+                    const message = textBuf.toString('utf8')
+                    console.log(`[Client Message]: ${message}`)
+                    send(OPC.TEXT, Buffer.from(message, 'utf8'));
+                    textBuf = null
+                }
+                break
+            }
+            case OPC.BIN: {
+                console.log(`[client BIN] ${websocketFrame.payload.length} bytes`);
+                send(OPC.BIN, websocketFrame.payload); // optional echo
+                break
+            }
+            case OPC.PING: {
+                send(OPC.PONG, websocketFrame.payload);
+                break
+            }
+            case OPC.CLOSE: {
+                // Echo CLOSE and end TCP socket
+                socket.write(buildFrame({ "opcode": OPC.CLOSE, "payload": websocketFrame.payload }));
+                socket.end()
+                break
+            }
+            default:
+                // ignore reserved/unknown
+                break;
+        }
+    }
+
+    const onBytes = (chunk) => { 
+        //whatever we had of leftover concat it, could be partial frame
+        leftover = Buffer.concat([leftover, chunk]);
+   
+        try {
+            leftover = parseFrames(leftover, onFrame);
+        } catch (e) {
+            // Protocol error → 1002 and close
+            const code = Buffer.from([0x03, 0xEA]); // 1002
+            const reason = Buffer.from('protocol error');
+            socket.write(buildFrame({ "opcode": OPC.CLOSE, "payload": Buffer.concat([code, reason]) }));
+            socket.end();
+        }
+    }
+
+    if (leftover.length) onBytes(Buffer.alloc(0)); // process initial leftover if any
+
+    //this will call socket read and give us a bunch of bytes
+    //we will need to parse them to find "websocket Frames"
+    //read system call 
+    socket.on('data', onBytes);
+    socket.on('end',  () => socket.end());
+    socket.on('error', () => socket.destroy());
 })
 
 server.listen(3000, "localhost", () => {
