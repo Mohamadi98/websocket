@@ -1,8 +1,9 @@
 //Secured websocket server 
 const https = require("https")
 const fs = require("fs")
+const PORT = process.argv[2] || 7443;
 const websocketServer = require("websocket").server
-const PORT = 8443
+// const PORT = 8443
 let connection = null
 
 const httpsServer = https.createServer({
@@ -28,6 +29,6 @@ websocket.on("request", (request) => {
     connection.on("close", () => console.log("Connection Closed!"))
     connection.on("message", (message) => {
         console.log(`Recieved message => ${message.utf8Data}`)
-        connection.send(`Server responded to your message with => ${message.utf8Data}`)
+        connection.send(`Server: ${PORT} responded to Client: ${request.socket.remotePort} message => ${message.utf8Data}`)
     })
 })
