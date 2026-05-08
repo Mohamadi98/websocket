@@ -2,3 +2,4 @@ node_modules
 keys
 .crt
 .key
+.DS_Store
