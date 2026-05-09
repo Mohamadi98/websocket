@@ -33,13 +33,13 @@ gameState[gameId] = {
 const users = { "user1": "connection obj" }
 
 const httpsServer = https.createServer({
-    key: fs.readFileSync(keys / server.key),
-    cert: fs.readFileSync('keys/server.cert')
+    key: fs.readFileSync('keys/server.key'),
+    cert: fs.readFileSync('keys/server.crt')
 },
     (req, res) => {
         if (req.url == '/') {
             res.writeHead(200)
-            const index = fs.readFileSync('game-system/index.html')
+            const index = fs.readFileSync('game-system/index.html').toString()
             res.write(index.replace("thegameid", gameId))
             res.end()
         }
@@ -96,7 +96,7 @@ websocket.on("request", (request) => {
             //update game players state
             gameState[gameId].players.push(msgObj.user)
             //broadcast to other players that a new player joined the game
-            gameState[gameId].players.foreach(player => {
+            gameState[gameId].players.forEach(player => {
                 users[player].send(JSON.stringify({
                     "cmd": "join",
                     "status": "ok",
@@ -106,13 +106,15 @@ websocket.on("request", (request) => {
             })
         }
         if(msgObj.cmd == "hit") {
-            const gameItem = gameState[gameId].items.filter(i => i.item === msgObj.item)
+            let gameItem = gameState[gameId].items.filter(i => i.item === msgObj.item)
+            console.log(gameItem)
+            gameItem = gameItem[0]
             gameItem.hp -= 10
             if(gameItem.hp <= 0) {
                 gameItem.hp = 0
                 gameItem.user = msgObj.user
             }
-            gameState[gameId].players.foreach(p => {
+            gameState[gameId].players.forEach(p => {
                 users[p].send(JSON.stringify({
                     "cmd": "hit",
                     "game": msgObj.game,
