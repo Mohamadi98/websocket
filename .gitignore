@@ -3,3 +3,4 @@ keys
 .crt
 .key
 .DS_Store
+.env
