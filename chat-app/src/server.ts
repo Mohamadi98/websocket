@@ -1,6 +1,8 @@
 import express from 'express'
+import {connectDB} from './database/postgres'
 
 (async ()=> {
+    await connectDB()
     const app = express()
     const requestLogger: express.RequestHandler = (req, _res, next)=> {
         console.log(
