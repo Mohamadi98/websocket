@@ -1,0 +1,15 @@
+create table coaches (
+  id serial primary key,
+  name varchar(100),
+  password varchar(100),
+  age int,
+  exp_years int
+);
+
+create table clients (
+  id serial primary key,
+  name varchar(100),
+  password varchar(100),
+  age int,
+  coach_id integer references coaches(id)
+);

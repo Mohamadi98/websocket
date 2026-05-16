@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Profile</title>
+</head>
+<body>
+  <h2>User Profile</h2>
+
+  <div>
+    <p><strong>ID:</strong> <span id="id">-</span></p>
+    <p><strong>Name:</strong> <span id="name">-</span></p>
+    <p><strong>Age:</strong> <span id="age">-</span></p>
+    <p><strong>Experience Years:</strong> <span id="exp_years">-</span></p>
+    <p><strong>Coach ID:</strong> <span id="coach_id">-</span></p>
+  </div>
+
+  <script>
+    async function loadProfile() {
+    //   const user_id = localStorage.getItem("user_id");
+    //   const user_type = localStorage.getItem("user_type");
+    //hardcoded for testing purposes
+    const user_id = '1'
+    const user_type =  'coach'
+
+      if (!user_id || !user_type) {
+        alert("User not logged in");
+        window.location.href = "/home";
+        return;
+      }
+
+      const res = await fetch(`/me?user_id=${user_id}&user_type=${user_type}`);
+      const data = await res.json();
+
+      // Helper to handle undefined/null
+      function setField(id, value) {
+        document.getElementById(id).textContent = value ?? "-";
+      }
+
+      setField("id", data.id);
+      setField("name", data.name);
+      setField("age", data.age);
+      setField("exp_years", data.exp_years);
+      setField("coach_id", data.coach_id);
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>

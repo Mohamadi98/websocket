@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Login</title>
+</head>
+
+<body>
+    <h2>Login</h2>
+
+    <form id="loginForm">
+        <input type="text" id="username" placeholder="Username" required />
+        <br /><br />
+
+        <input type="password" id="password" placeholder="Password" required />
+        <br /><br />
+
+        <label>
+            <input type="radio" name="role" value="client" checked />
+            Client
+        </label>
+
+        <label>
+            <input type="radio" name="role" value="coach" />
+            Coach
+        </label>
+
+        <br /><br />
+
+        <button type="submit">Login</button>
+    </form>
+
+    <script>
+        const form = document.getElementById("loginForm");
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            const role = document.querySelector('input[name="role"]:checked').value;
+
+            const res = await fetch("http://localhost:3000/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username,
+                    password,
+                    role
+                })
+            });
+
+            if (res.status === 200) {
+                const data = await res.json();
+
+                // localStorage.setItem("user_id", data.user_id);
+                // localStorage.setItem("user_type", data.user_type);
+                // window.location.href = "/profile";
+            } else {
+                alert("Login failed");
+            }
+        });
+    </script>
+</body>
+
+</html>

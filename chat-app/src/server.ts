@@ -1,5 +1,8 @@
 import express from 'express'
+import bodyParser from 'body-parser'
 import {connectDB} from './database/postgres'
+import fs from 'fs'
+import { loginHandler } from './controllers/appController'
 
 (async ()=> {
     await connectDB()
@@ -10,10 +13,21 @@ import {connectDB} from './database/postgres'
         )
         next()
     }
+    app.use(bodyParser.json())
     app.use(requestLogger)
     app.get('/healthz', (_req, res) => {
         res.send({'Status': 'OK'})
     })
+    app.get('/home', (_req, res) => {
+        res.write(fs.readFileSync('frontend/login.html'))
+        res.end()
+    })
+    app.post('/login', loginHandler)
+    app.get('/profile', (_req, res) => {
+        res.write(fs.readFileSync('frontend/profile.html'))
+        res.end()
+    })
+    //TODO: add /me endpoint to fetch user profile
 
     app.listen(3000, () => {
         console.log('Server running on PORT: 3000')
