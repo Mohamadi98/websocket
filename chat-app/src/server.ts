@@ -2,7 +2,7 @@ import express from 'express'
 import bodyParser from 'body-parser'
 import {connectDB} from './database/postgres'
 import fs from 'fs'
-import { loginHandler } from './controllers/appController'
+import { loginHandler, profileInfoHandler } from './controllers/appController'
 
 (async ()=> {
     await connectDB()
@@ -28,6 +28,7 @@ import { loginHandler } from './controllers/appController'
         res.end()
     })
     //TODO: add /me endpoint to fetch user profile
+    app.get('/profile/me', profileInfoHandler)
 
     app.listen(3000, () => {
         console.log('Server running on PORT: 3000')

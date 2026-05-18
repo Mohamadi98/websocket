@@ -29,7 +29,7 @@
         return;
       }
 
-      const res = await fetch(`/me?user_id=${user_id}&user_type=${user_type}`);
+      const res = await fetch(`profile/me?user_id=${user_id}&user_type=${user_type}`);
       const data = await res.json();
 
       // Helper to handle undefined/null
@@ -37,11 +37,11 @@
         document.getElementById(id).textContent = value ?? "-";
       }
 
-      setField("id", data.id);
-      setField("name", data.name);
-      setField("age", data.age);
-      setField("exp_years", data.exp_years);
-      setField("coach_id", data.coach_id);
+      setField("id", data.user.id);
+      setField("name", data.user.name);
+      setField("age", data.user.age);
+      setField("exp_years", data.user.exp_years);
+      setField("coach_id", data.user.coach_id);
     }
 
     loadProfile();

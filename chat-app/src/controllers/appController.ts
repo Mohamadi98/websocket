@@ -16,3 +16,22 @@ export const loginHandler: express.RequestHandler = async(req, res) => {
         'user_type': role 
     }) 
 }
+
+export const profileInfoHandler: express.RequestHandler = async(req, res) => {
+    const userId = parseInt(req.query.user_id as string)
+    const userType = req.query.user_type
+    let dbTable = 'coaches'
+    if(userType === 'client') dbTable = 'clients'
+
+    const dbRes = await postgresClient.query(
+        `SELECT * FROM ${dbTable} WHERE id = $1`, [userId]
+    )
+    if(dbRes.rowCount === 0) {
+        res.sendStatus(404)
+        return
+    }
+    console.log(dbRes.rows[0])
+    res.status(200).send({
+        'user': dbRes.rows[0]
+    })
+}
