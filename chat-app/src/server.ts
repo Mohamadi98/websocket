@@ -1,4 +1,6 @@
 import express from 'express'
+import { WebSocketServer } from 'ws'
+import { createServer } from 'http'
 import bodyParser from 'body-parser'
 import {connectDB} from './database/postgres'
 import fs from 'fs'
@@ -15,6 +17,19 @@ import { loginHandler, profileInfoHandler } from './controllers/appController'
     }
     app.use(bodyParser.json())
     app.use(requestLogger)
+    const server = createServer(app)
+
+    const wss = new WebSocketServer({
+        server: server
+    })
+    wss.on('connection', (websocket) => {
+        websocket.on('error', console.error)
+        websocket.on('message', (data) => {
+            console.log(`websocket server received this from client: ${data}`)
+            websocket.send(`reply to this message: ${data}`)
+        })
+    })
+
     app.get('/healthz', (_req, res) => {
         res.send({'Status': 'OK'})
     })
@@ -27,10 +42,9 @@ import { loginHandler, profileInfoHandler } from './controllers/appController'
         res.write(fs.readFileSync('frontend/profile.html'))
         res.end()
     })
-    //TODO: add /me endpoint to fetch user profile
     app.get('/profile/me', profileInfoHandler)
 
-    app.listen(3000, () => {
+    server.listen(3000, () => {
         console.log('Server running on PORT: 3000')
     })
 })()
