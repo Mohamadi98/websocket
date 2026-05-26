@@ -5,6 +5,7 @@ import bodyParser from 'body-parser'
 import {connectDB} from './database/postgres'
 import fs from 'fs'
 import { loginHandler, profileInfoHandler } from './controllers/appController'
+import { addConnection, removeConnection } from './database/wsDatabase'
 
 (async ()=> {
     await connectDB()
@@ -23,23 +24,24 @@ import { loginHandler, profileInfoHandler } from './controllers/appController'
         server: server
     })
     wss.on('connection', (websocket, request) => {
-        const url = new URL(request.url as string, 'http://localhost')
-        const user_id = url.searchParams.get('user_id') as string
-        const user_type = url.searchParams.get('user_type') as string
-        console.log(user_id, user_type)
-        if(user_id === null || user_type === null) {
-            websocket.close(1008, 'Missing required query parameter!')
-            return
+        const url = new URL(request.url ?? '', 'http://localhost')
+        const userIdParam = url.searchParams.get('user_id')
+        const userType = url.searchParams.get('user_type')
+        if(!userIdParam || !userType) {
+            websocket.close(1008, 'Missing required query parameters!')
         }
-        const mapKey = user_id.concat(user_type)
-        const userId = parseInt(user_id)
-        
-        //TODO: store the user ws connection in an in-memory data strucutre
+
+        const userId = Number(userIdParam)
+        const connectionKey = `${userType}${userId}`
+        addConnection(connectionKey, websocket)
 
         websocket.on('error', console.error)
         websocket.on('message', (data) => {
             console.log(`websocket server received this from client: ${data}`)
             websocket.send(`reply to this message: ${data}`)
+        })
+        websocket.on('close', () => {
+            removeConnection(connectionKey)
         })
     })
 
