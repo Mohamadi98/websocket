@@ -4,7 +4,7 @@ import { createServer } from 'http'
 import bodyParser from 'body-parser'
 import {connectDB} from './database/postgres'
 import fs from 'fs'
-import { loginHandler, profileInfoHandler } from './controllers/appController'
+import { loginHandler, profileInfoHandler, listUsers } from './controllers/appController'
 import { addConnection, removeConnection } from './database/wsDatabase'
 
 (async ()=> {
@@ -58,6 +58,11 @@ import { addConnection, removeConnection } from './database/wsDatabase'
         res.end()
     })
     app.get('/profile/me', profileInfoHandler)
+    app.get('/users', (_req, res) => {
+        res.write(fs.readFileSync('frontend/users.html'))
+        res.end()
+    })
+    app.get('/listusers', listUsers)
 
     server.listen(3000, () => {
         console.log('Server running on PORT: 3000')

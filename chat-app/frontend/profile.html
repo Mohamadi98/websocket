@@ -8,6 +8,10 @@
   <h2>User Profile</h2>
 
   <div>
+    <button id="usersBtn">Users</button>
+  </div>
+
+  <div>
     <p><strong>ID:</strong> <span id="id">-</span></p>
     <p><strong>Name:</strong> <span id="name">-</span></p>
     <p><strong>Age:</strong> <span id="age">-</span></p>
@@ -17,11 +21,16 @@
   </div>
 
   <script>
+
+    document.getElementById("usersBtn").addEventListener("click", () => {
+      window.location.href = "/users";
+    });
+
     async function loadProfile() {
-    //   const user_id = localStorage.getItem("user_id");
+      const user_id = localStorage.getItem("user_id");
     //   const user_type = localStorage.getItem("user_type");
     //hardcoded for testing purposes
-    const user_id = '1'
+    // const user_id = '1'
 
       if (!user_id) {
         alert("User not logged in");

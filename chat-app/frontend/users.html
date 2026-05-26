@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Users</title>
+</head>
+
+<body>
+    <h2>All Users</h2>
+
+    <div id="usersList"></div>
+
+    <script>
+        async function loadUsers() {
+            const user_id = localStorage.getItem('user_id')
+            const res = await fetch(`/listusers/?user_id=${user_id}`);
+            const users = await res.json();
+
+            const container = document.getElementById("usersList");
+
+            users.forEach(user => {
+                const userDiv = document.createElement("div");
+
+                userDiv.innerHTML = `
+          <p>
+            ID: ${user.id} | Name: ${user.name}
+            <button>Start Chat</button>
+          </p>
+        `;
+
+                container.appendChild(userDiv);
+            });
+        }
+
+        loadUsers();
+    </script>
+</body>
+
+</html>

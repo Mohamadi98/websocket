@@ -55,7 +55,7 @@
             if (res.status === 200) {
                 const data = await res.json();
 
-                // localStorage.setItem("user_id", data.user_id);
+                localStorage.setItem("user_id", data.user_id);
                 // localStorage.setItem("user_type", data.user_type);
                 window.location.href = "/profile";
             } else {

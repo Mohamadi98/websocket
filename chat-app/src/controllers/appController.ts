@@ -9,13 +9,14 @@ export const loginHandler: express.RequestHandler = async(req, res) => {
         res.sendStatus(404)
         return 
     }
+
     res.status(200).send({
-        'user_id': dbRes.rows[0]
+        'user_id': dbRes.rows[0].id
     }) 
 }
 
 export const profileInfoHandler: express.RequestHandler = async(req, res) => {
-    const userId = parseInt(req.query.user_id as string)
+    const userId = Number(req.query.user_id as string)
 
     const dbRes = await postgresClient.query(
         'SELECT id, name, role, age FROM users WHERE id = $1', [userId]
@@ -24,8 +25,15 @@ export const profileInfoHandler: express.RequestHandler = async(req, res) => {
         res.sendStatus(404)
         return
     }
-    console.log(dbRes.rows[0])
+
     res.status(200).send({
         'user': dbRes.rows[0]
     })
+}
+
+export const listUsers: express.RequestHandler = async(req, res) => {
+    const user_id = Number(req.query.user_id)
+    const dbRes = await postgresClient.query('SELECT id, name FROM users WHERE id != $1', [user_id])
+
+    res.status(200).send(dbRes.rows)
 }
