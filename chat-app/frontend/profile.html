@@ -11,8 +11,9 @@
     <p><strong>ID:</strong> <span id="id">-</span></p>
     <p><strong>Name:</strong> <span id="name">-</span></p>
     <p><strong>Age:</strong> <span id="age">-</span></p>
-    <p><strong>Experience Years:</strong> <span id="exp_years">-</span></p>
-    <p><strong>Coach ID:</strong> <span id="coach_id">-</span></p>
+    <!-- <p><strong>Experience Years:</strong> <span id="exp_years">-</span></p>
+    <p><strong>Coach ID:</strong> <span id="coach_id">-</span></p> -->
+    <p><strong>Role:</strong> <span id="role">-</span></p>
   </div>
 
   <script>
@@ -21,15 +22,14 @@
     //   const user_type = localStorage.getItem("user_type");
     //hardcoded for testing purposes
     const user_id = '1'
-    const user_type =  'coach'
 
-      if (!user_id || !user_type) {
+      if (!user_id) {
         alert("User not logged in");
         window.location.href = "/home";
         return;
       }
 
-      const res = await fetch(`profile/me?user_id=${user_id}&user_type=${user_type}`);
+      const res = await fetch(`profile/me?user_id=${user_id}`);
       const data = await res.json();
 
       // Helper to handle undefined/null
@@ -40,8 +40,7 @@
       setField("id", data.user.id);
       setField("name", data.user.name);
       setField("age", data.user.age);
-      setField("exp_years", data.user.exp_years);
-      setField("coach_id", data.user.coach_id);
+      setField("role", data.user.role);
     }
 
     loadProfile();

@@ -13,3 +13,11 @@ create table clients (
   age int,
   coach_id integer references coaches(id)
 );
+
+create table users (
+  id serial primary key,
+  name varchar(100),
+  password varchar(100),
+  role varchar(50),
+  age int
+);
