@@ -5,7 +5,8 @@ import bodyParser from 'body-parser'
 import {connectDB} from './database/postgres'
 import fs from 'fs'
 import { loginHandler, profileInfoHandler, listUsers } from './controllers/appController'
-import { addConnection, removeConnection } from './database/wsDatabase'
+import { addConnection, removeConnection, getConnection } from './database/wsDatabase'
+import { wsJson } from './utils/interfaces'
 
 (async ()=> {
     await connectDB()
@@ -24,21 +25,33 @@ import { addConnection, removeConnection } from './database/wsDatabase'
         server: server
     })
     wss.on('connection', (websocket, request) => {
+        websocket.send('Welcome to websocket server!')
         const url = new URL(request.url ?? '', 'http://localhost')
         const userIdParam = url.searchParams.get('user_id')
-        const userType = url.searchParams.get('user_type')
-        if(!userIdParam || !userType) {
+        // const userType = url.searchParams.get('user_type')
+        if(!userIdParam) {
             websocket.close(1008, 'Missing required query parameters!')
         }
 
         const userId = Number(userIdParam)
-        const connectionKey = `${userType}${userId}`
+        const connectionKey = `key${userIdParam}`
         addConnection(connectionKey, websocket)
 
         websocket.on('error', console.error)
         websocket.on('message', (data) => {
-            console.log(`websocket server received this from client: ${data}`)
-            websocket.send(`reply to this message: ${data}`)
+            const stringData = data.toString()
+            const jsonData: wsJson = JSON.parse(stringData)
+
+            //payload format {"message": "hello", "type": "chat_message", "recipient_id": 2}
+            console.log(`websocket server received this from client: ${jsonData}`)
+            const recipientWebsocket = getConnection(`key${jsonData.recipient_id}`)
+            const payload: wsJson = {
+                type: jsonData.type,
+                sender_id: userId,
+                recipient_id: jsonData.recipient_id,
+                message: jsonData.message
+            }
+            recipientWebsocket?.send(JSON.stringify(payload))
         })
         websocket.on('close', () => {
             removeConnection(connectionKey)

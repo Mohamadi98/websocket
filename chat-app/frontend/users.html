@@ -14,6 +14,25 @@
     <script>
         async function loadUsers() {
             const user_id = localStorage.getItem('user_id')
+
+            const ws = new WebSocket(`ws://localhost:3000?user_id=${user_id}`);
+
+            ws.onopen = () => {
+                console.log("WebSocket connected");
+            };
+
+            ws.onmessage = (event) => {
+                console.log("Message from server:", event.data);
+            };
+
+            ws.onclose = () => {
+                console.log("WebSocket disconnected");
+            };
+
+            ws.onerror = (err) => {
+                console.error("WebSocket error:", err);
+            };
+
             const res = await fetch(`/listusers/?user_id=${user_id}`);
             const users = await res.json();
 
