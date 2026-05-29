@@ -4,6 +4,26 @@
 <head>
     <meta charset="UTF-8" />
     <title>Users</title>
+    <style>
+        #chatBox {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background: #f9f9f9;
+            display: none;
+        }
+
+        #messages {
+            height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+    </style>
 </head>
 
 <body>
@@ -11,42 +31,102 @@
 
     <div id="usersList"></div>
 
+    <!-- Chat Box -->
+    <div id="chatBox">
+        <h4 id="chatWith">Chat</h4>
+        <div id="messages"></div>
+        <input type="text" id="messageInput" placeholder="Type a message..." />
+        <button id="sendBtn">Send</button>
+    </div>
+
     <script>
+        const user_id = localStorage.getItem('user_id')
+        if (!user_id) {
+            alert("User not logged in");
+            window.location.href = "/home";
+        }
+
+        const ws = new WebSocket(`ws://localhost:3000?user_id=${user_id}`);
+
+        ws.onopen = () => {
+            console.log("WebSocket connected");
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            if (data.type === "chat_message") {
+                const senderId = data.sender_id;
+
+                // Open chat box if not already open with this user
+                openChat(senderId);
+
+                appendMessage(`User ${senderId}: ${data.message}`);
+            }
+        };
+
+        ws.onclose = () => {
+            console.log("WebSocket disconnected");
+        };
+
+        ws.onerror = (err) => {
+            console.error("WebSocket error:", err);
+        };
+
+        // --- Chat state ---
+        let activeChatUserId = null;
+
+        function openChat(userId) {
+            activeChatUserId = userId;
+
+            document.getElementById("chatBox").style.display = "block";
+            document.getElementById("chatWith").textContent = `Chat with User ${userId}`;
+        }
+
+        function appendMessage(text) {
+            const messagesDiv = document.getElementById("messages");
+            const p = document.createElement("p");
+            p.textContent = text;
+            messagesDiv.appendChild(p);
+        }
+
+        // --- Send message ---
+        document.getElementById("sendBtn").addEventListener("click", () => {
+            const input = document.getElementById("messageInput");
+            const message = input.value;
+
+            if (!message || !activeChatUserId) return;
+
+            const payload = {
+                type: "chat_message",
+                recipient_id: activeChatUserId,
+                message: message
+            };
+
+            ws.send(JSON.stringify(payload));
+
+            appendMessage(`Me: ${message}`);
+            input.value = "";
+        });
+
+        // --- Load users ---
         async function loadUsers() {
-            const user_id = localStorage.getItem('user_id')
-
-            const ws = new WebSocket(`ws://localhost:3000?user_id=${user_id}`);
-
-            ws.onopen = () => {
-                console.log("WebSocket connected");
-            };
-
-            ws.onmessage = (event) => {
-                console.log("Message from server:", event.data);
-            };
-
-            ws.onclose = () => {
-                console.log("WebSocket disconnected");
-            };
-
-            ws.onerror = (err) => {
-                console.error("WebSocket error:", err);
-            };
-
             const res = await fetch(`/listusers/?user_id=${user_id}`);
             const users = await res.json();
 
             const container = document.getElementById("usersList");
 
             users.forEach(user => {
+                if (user.id === user_id) return; // skip self
+
                 const userDiv = document.createElement("div");
 
-                userDiv.innerHTML = `
-          <p>
-            ID: ${user.id} | Name: ${user.name}
-            <button>Start Chat</button>
-          </p>
-        `;
+                const button = document.createElement("button");
+                button.textContent = "Start Chat";
+                button.onclick = () => openChat(user.id);
+
+                userDiv.innerHTML = `ID: ${user.id} | Name: ${user.name} `;
+                userDiv.appendChild(button);
 
                 container.appendChild(userDiv);
             });
