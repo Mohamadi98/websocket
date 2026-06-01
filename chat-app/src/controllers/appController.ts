@@ -1,5 +1,6 @@
 import express from 'express'
 import { postgresClient } from '../database/postgres'
+import { getMessages } from '../services/chatService'
 
 export const loginHandler: express.RequestHandler = async(req, res) => {
     const {username, password} = req.body
@@ -36,4 +37,16 @@ export const listUsers: express.RequestHandler = async(req, res) => {
     const dbRes = await postgresClient.query('SELECT id, name FROM users WHERE id != $1', [user_id])
 
     res.status(200).send(dbRes.rows)
+}
+
+export const getAllMessages: express.RequestHandler = async(req, res) => {
+    const user1 = Number(req.query.user1)
+    const user2 = Number(req.query.user2)
+    if(!user1 || !user2) {
+        res.status(400)
+        return
+    }
+
+    const allMessages = await getMessages(user1, user2)
+    res.status(200).send(allMessages)
 }

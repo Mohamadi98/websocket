@@ -4,7 +4,8 @@ import { createServer } from 'http'
 import bodyParser from 'body-parser'
 import {connectDB} from './database/postgres'
 import fs from 'fs'
-import { loginHandler, profileInfoHandler, listUsers } from './controllers/appController'
+import { loginHandler, profileInfoHandler, listUsers, getAllMessages } from './controllers/appController'
+import { storeMessage } from './services/chatService'
 import { addConnection, removeConnection, getConnection } from './database/wsDatabase'
 import { wsJson } from './utils/interfaces'
 
@@ -42,7 +43,6 @@ import { wsJson } from './utils/interfaces'
             const jsonData: wsJson = JSON.parse(stringData)
 
             //received payload format {"message": "hello", "type": "chat_message", "recipient_id": 2}
-            console.log(`websocket server received this message: ${jsonData.message} from client with id: ${userId}`)
             const recipientWebsocket = getConnection(`key${jsonData.recipient_id}`)
             const payload: wsJson = {
                 type: jsonData.type,
@@ -50,6 +50,7 @@ import { wsJson } from './utils/interfaces'
                 recipient_id: jsonData.recipient_id,
                 message: jsonData.message
             }
+            storeMessage(payload.message, userId, payload.recipient_id)
             recipientWebsocket?.send(JSON.stringify(payload))
         })
         websocket.on('close', () => {
@@ -75,6 +76,7 @@ import { wsJson } from './utils/interfaces'
         res.end()
     })
     app.get('/listusers', listUsers)
+    app.get('/messages', getAllMessages)
 
     server.listen(3000, () => {
         console.log('Server running on PORT: 3000')

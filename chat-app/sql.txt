@@ -21,3 +21,11 @@ create table users (
   role varchar(50),
   age int
 );
+
+create table messages (
+  id serial primary key,
+  sender_id int,
+  recipient_id int,
+  message varchar(255),
+  created_at timestamptz default NOW()
+);

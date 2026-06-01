@@ -31,7 +31,6 @@
 
     <div id="usersList"></div>
 
-    <!-- Chat Box -->
     <div id="chatBox">
         <h4 id="chatWith">Chat</h4>
         <div id="messages"></div>
@@ -40,7 +39,8 @@
     </div>
 
     <script>
-        const user_id = localStorage.getItem('user_id')
+        const user_id = Number(localStorage.getItem('user_id'));
+
         if (!user_id) {
             alert("User not logged in");
             window.location.href = "/home";
@@ -56,12 +56,22 @@
             const data = JSON.parse(event.data);
 
             if (data.type === "chat_message") {
-                const senderId = data.sender_id;
 
-                // Open chat box if not already open with this user
-                openChat(senderId);
+                // Case 1: no chat open → open it
+                if (activeChatUserId === null) {
+                    openChat(data.sender_id);
+                    renderMessage(data);
+                    return;
+                }
 
-                appendMessage(`User ${senderId}: ${data.message}`);
+                // Case 2: message from active chat
+                if (data.sender_id === activeChatUserId) {
+                    renderMessage(data);
+                    return;
+                }
+
+                // Case 3: message from another user
+                console.log(`New message from User ${data.sender_id}`);
             }
         };
 
@@ -73,29 +83,57 @@
             console.error("WebSocket error:", err);
         };
 
-        // --- Chat state ---
         let activeChatUserId = null;
 
-        function openChat(userId) {
+        async function openChat(userId) {
             activeChatUserId = userId;
 
             document.getElementById("chatBox").style.display = "block";
-            document.getElementById("chatWith").textContent = `Chat with User ${userId}`;
+            document.getElementById("chatWith").textContent =
+                `Chat with User ${userId}`;
+
+            await loadConversation(userId);
         }
 
-        function appendMessage(text) {
+        function clearMessages() {
+            document.getElementById("messages").innerHTML = "";
+        }
+
+        async function loadConversation(otherUserId) {
+            const res = await fetch(
+                `/messages?user1=${user_id}&user2=${otherUserId}`
+            );
+
+            const messages = await res.json();
+
+            clearMessages();
+
+            messages.forEach(message => {
+                renderMessage(message);
+            });
+        }
+
+        function renderMessage(message) {
             const messagesDiv = document.getElementById("messages");
+
             const p = document.createElement("p");
-            p.textContent = text;
+
+            if (message.sender_id === user_id) {
+                p.textContent = `Me: ${message.message}`;
+            } else {
+                p.textContent = `User ${message.sender_id}: ${message.message}`;
+            }
+
             messagesDiv.appendChild(p);
         }
 
-        // --- Send message ---
         document.getElementById("sendBtn").addEventListener("click", () => {
             const input = document.getElementById("messageInput");
-            const message = input.value;
+            const message = input.value.trim();
 
-            if (!message || !activeChatUserId) return;
+            if (!message || !activeChatUserId) {
+                return;
+            }
 
             const payload = {
                 type: "chat_message",
@@ -105,11 +143,15 @@
 
             ws.send(JSON.stringify(payload));
 
-            appendMessage(`Me: ${message}`);
+            renderMessage({
+                sender_id: user_id,
+                recipient_id: activeChatUserId,
+                message: message
+            });
+
             input.value = "";
         });
 
-        // --- Load users ---
         async function loadUsers() {
             const res = await fetch(`/listusers/?user_id=${user_id}`);
             const users = await res.json();
@@ -117,7 +159,10 @@
             const container = document.getElementById("usersList");
 
             users.forEach(user => {
-                if (user.id === user_id) return; // skip self
+
+                // if (user.id === user_id) {
+                //     return;
+                // }
 
                 const userDiv = document.createElement("div");
 
@@ -125,7 +170,9 @@
                 button.textContent = "Start Chat";
                 button.onclick = () => openChat(user.id);
 
-                userDiv.innerHTML = `ID: ${user.id} | Name: ${user.name} `;
+                userDiv.innerHTML =
+                    `ID: ${user.id} | Name: ${user.name} `;
+
                 userDiv.appendChild(button);
 
                 container.appendChild(userDiv);
