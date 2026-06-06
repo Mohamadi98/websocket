@@ -29,3 +29,21 @@ create table messages (
   message varchar(255),
   created_at timestamptz default NOW()
 );
+
+create table last_seen (
+  id serial primary key,
+  main_participant_id int,
+  participant_id int,
+  seen_at timestamptz
+);
+
+select m.sender_id, count(m.id)
+from messages m
+left join last_seen ls
+on ls.main_participant_id = 1 and ls.participant_id = m.sender_id
+where m.recipient_id = 1
+and (
+  ls.seen_at is null
+  or m.created_at > ls.seen_at
+)
+group by m.sender_id;

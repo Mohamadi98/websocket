@@ -1,6 +1,6 @@
 import express from 'express'
 import { postgresClient } from '../database/postgres'
-import { getMessages } from '../services/chatService'
+import { getMessages, updateLastSeen, unreadMessages } from '../services/chatService'
 
 export const loginHandler: express.RequestHandler = async(req, res) => {
     const {username, password} = req.body
@@ -49,4 +49,18 @@ export const getAllMessages: express.RequestHandler = async(req, res) => {
 
     const allMessages = await getMessages(user1, user2)
     res.status(200).send(allMessages)
+}
+
+export const lastSeen: express.RequestHandler = async(req, res) => {
+    const {user_id, other_user_id} = req.body
+    await updateLastSeen(user_id, other_user_id)
+
+    res.status(201).send('Last seen updated')
+}
+
+export const getUnread: express.RequestHandler = async(req, res) => {
+    const user_id = Number(req.query)
+    const unreadMsgs = await unreadMessages(user_id)
+
+    res.status(200).send(unreadMsgs)
 }

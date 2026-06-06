@@ -4,7 +4,7 @@ import { createServer } from 'http'
 import bodyParser from 'body-parser'
 import {connectDB} from './database/postgres'
 import fs from 'fs'
-import { loginHandler, profileInfoHandler, listUsers, getAllMessages } from './controllers/appController'
+import { loginHandler, profileInfoHandler, listUsers, getAllMessages, lastSeen, getUnread } from './controllers/appController'
 import { storeMessage } from './services/chatService'
 import { addConnection, removeConnection, getConnection } from './database/wsDatabase'
 import { wsJson } from './utils/interfaces'
@@ -51,7 +51,9 @@ import { wsJson } from './utils/interfaces'
                 message: jsonData.message
             }
             storeMessage(payload.message, userId, payload.recipient_id)
-            recipientWebsocket?.send(JSON.stringify(payload))
+            if(recipientWebsocket) {
+                recipientWebsocket?.send(JSON.stringify(payload))
+            }
         })
         websocket.on('close', () => {
             removeConnection(connectionKey)
@@ -77,6 +79,8 @@ import { wsJson } from './utils/interfaces'
     })
     app.get('/listusers', listUsers)
     app.get('/messages', getAllMessages)
+    app.post('/messages/seen', lastSeen)
+    app.get('/messages/unread', getUnread)
 
     server.listen(3000, () => {
         console.log('Server running on PORT: 3000')
