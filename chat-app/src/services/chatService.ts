@@ -19,10 +19,10 @@ export async function updateLastSeen(user_id: Number, other_user_id: Number) {
 
 export async function unreadMessages(user_id: Number) {
     const dbRes = await postgresClient.query(
-        `select m.sender_id, count(m.id) from messages m
-        left join last_seen ls on ls.main_participant_id = $1 and ls.participant_id = m.sender_id 
-        where m.recipient_id = $2 and (ls.seen_at is null or m.created_at > ls.seen_at) 
-        group by m.sender_id;`, [user_id, user_id]
+        `SELECT m.sender_id, count(m.id) FROM messages m
+        LEFT JOIN last_seen ls ON ls.user_id = $1 and ls.other_user_id = m.sender_id 
+        WHERE m.recipient_id = $2 AND (ls.seen_at is null OR m.created_at > ls.seen_at) 
+        GROUP BY m.sender_id;`, [user_id, user_id]
     )
     
     return dbRes.rows

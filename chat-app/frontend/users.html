@@ -40,6 +40,7 @@
 
     <script>
         const user_id = Number(localStorage.getItem('user_id'));
+        let unreadCounts = {}
 
         if (!user_id) {
             alert("User not logged in");
@@ -93,6 +94,20 @@
                 `Chat with User ${userId}`;
 
             await loadConversation(userId);
+
+            // mark as seen
+            await fetch('/messages/seen', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: user_id,
+                    other_user_id: Number(userId)
+                })
+            });
+
+            // reset locally
+            // unreadCounts[userId] = 0;
+            loadUsers(); // refresh UI
         }
 
         function clearMessages() {
@@ -152,29 +167,44 @@
             input.value = "";
         });
 
+        async function loadUnread() {
+            const res = await fetch(`messages/unread?user_id=${user_id}`);
+            unreadCounts = await res.json();
+        }
+
         async function loadUsers() {
+            await loadUnread();
+
             const res = await fetch(`/listusers/?user_id=${user_id}`);
             const users = await res.json();
 
             const container = document.getElementById("usersList");
+            container.innerHTML = "";
+
+            const unreadMap = {}
+            unreadCounts.forEach(obj => {
+                unreadMap[obj.sender_id] = obj.count
+            })
 
             users.forEach(user => {
-
-                // if (user.id === user_id) {
-                //     return;
-                // }
+                if (user.id === user_id) return;
 
                 const userDiv = document.createElement("div");
+
+                // const unread = unreadCounts[user.id] || 0;
+                const unread = unreadMap[user.id] || 0
+
+                const label = unread > 0 ? `(${unread} new message)` : "";
+
+                userDiv.innerHTML = `
+            ID: ${user.id} | Name: ${user.name} ${label}
+        `;
 
                 const button = document.createElement("button");
                 button.textContent = "Start Chat";
                 button.onclick = () => openChat(user.id);
 
-                userDiv.innerHTML =
-                    `ID: ${user.id} | Name: ${user.name} `;
-
                 userDiv.appendChild(button);
-
                 container.appendChild(userDiv);
             });
         }

@@ -59,7 +59,7 @@ export const lastSeen: express.RequestHandler = async(req, res) => {
 }
 
 export const getUnread: express.RequestHandler = async(req, res) => {
-    const user_id = Number(req.query)
+    const user_id = Number(req.query.user_id)
     const unreadMsgs = await unreadMessages(user_id)
 
     res.status(200).send(unreadMsgs)
