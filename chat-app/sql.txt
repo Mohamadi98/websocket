@@ -20,3 +20,6 @@ create table last_seen (
   participant_id int,
   seen_at timestamptz
 );
+
+ALTER TABLE last_seen 
+ADD CONSTRAINT unique_user_combo UNIQUE (user_id, other_user_id);

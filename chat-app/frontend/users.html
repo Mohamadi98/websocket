@@ -67,6 +67,7 @@
 
                 // Case 2: message from active chat
                 if (data.sender_id === activeChatUserId) {
+                    markAsRead(data.sender_id)
                     renderMessage(data);
                     return;
                 }
@@ -86,6 +87,17 @@
 
         let activeChatUserId = null;
 
+        async function markAsRead(userId) {
+            await fetch('/messages/seen', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: user_id,
+                    other_user_id: Number(userId)
+                })
+            });
+        }
+        
         async function openChat(userId) {
             activeChatUserId = userId;
 

@@ -14,10 +14,14 @@ export async function getMessages(sender_id: Number, recipient_id: Number) {
 
 export async function updateLastSeen(user_id: Number, other_user_id: Number) {
     await postgresClient.query(
-        'INSERT INTO last_seen(user_id, other_user_id, seen_at) VALUES($1, $2, NOW())', [user_id, other_user_id])
+        `INSERT INTO last_seen(user_id, other_user_id, seen_at) VALUES($1, $2, NOW())
+        ON CONFLICT (user_id, other_user_id)
+        DO UPDATE SET seen_at = NOW()`, [user_id, other_user_id]
+    )
 }
 
 export async function unreadMessages(user_id: Number) {
+    //TODO: round the comparison to the last minute ignoring the seconds and what comes after that
     const dbRes = await postgresClient.query(
         `SELECT m.sender_id, count(m.id) FROM messages m
         LEFT JOIN last_seen ls ON ls.user_id = $1 and ls.other_user_id = m.sender_id 
