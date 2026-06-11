@@ -18,11 +18,7 @@ export function setupWebSocketServer(httpServer: Server) {
 
         const userId = Number(userIdParam)
         const connectionKey = `Key-${userIdParam}`
-
-        const existing = getConnection(connectionKey)
-        if(existing && existing !== ws) {
-            ws.close(1000, 'Replaced by new connection!')
-        }
+        
         addConnection(connectionKey, ws)
 
         ws.on('error', console.error)
@@ -31,10 +27,7 @@ export function setupWebSocketServer(httpServer: Server) {
         })
 
         ws.on('close', () => {
-            const current = getConnection(connectionKey)
-            if(current === ws) {
-                removeConnection(connectionKey)
-            }
+            removeConnection(connectionKey, ws)
         })
     })
 }

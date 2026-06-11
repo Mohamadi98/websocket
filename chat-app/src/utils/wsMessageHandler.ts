@@ -1,6 +1,7 @@
 import { wsJson } from "./interfaces";
 import { getConnection } from "../database/wsDatabase";
 import { storeMessage } from "../services/chatService";
+import WebSocket from "ws";
 
 export function messageHandler(data: string, sender_id: Number) {
     const stringData = data.toString()
@@ -21,7 +22,14 @@ export function messageHandler(data: string, sender_id: Number) {
     }
 
     storeMessage(jsonData.message, sender_id, jsonData.recipient_id)
-    if(recipientWebSocket && recipientWebSocket.readyState === recipientWebSocket.OPEN) {
-        recipientWebSocket.send(JSON.stringify(payload))
+    if(recipientWebSocket) {
+        recipientWebSocket?.forEach(ws => {
+        if (ws.readyState === WebSocket.OPEN) {
+            console.log('we are sending')
+            ws.send(JSON.stringify(payload))
+        }
+    })
+    } else {
+        console.log('User offline storing message in DB')
     }
 }
