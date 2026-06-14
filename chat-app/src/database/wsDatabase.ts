@@ -10,7 +10,7 @@ export function addConnection(key: string, value: WebSocket): void {
 
     console.log(`New user added: ${key}`)
     wsMap.forEach((_value, key) => {
-        console.log(`key: ${key}`)
+        console.log(`key: ${key} and set of ws of size: ${wsMap.get(key)?.size}`)
     })
 }
 
