@@ -1,8 +1,11 @@
 import { postgresClient } from "../database/postgres";
 
-export async function storeMessage(message: string, sender_id: Number, recipient_id: Number) {
-    await postgresClient.query(
-        'INSERT INTO messages(sender_id, recipient_id, message) VALUES($1, $2, $3)', [sender_id, recipient_id, message])
+export async function storeMessage(message: string, sender_id: Number, recipient_id: Number, client_msg_id: string) {
+    return await postgresClient.query(
+        `INSERT INTO messages(sender_id, recipient_id, message, client_msg_id)
+        VALUES($1, $2, $3, $4)
+        ON CONFLICT (client_msg_id) DO NOTHING
+        RETURNING *`, [sender_id, recipient_id, message, client_msg_id])
 }
 
 export async function getMessages(sender_id: Number, recipient_id: Number) {
@@ -21,7 +24,6 @@ export async function updateLastSeen(user_id: Number, other_user_id: Number) {
 }
 
 export async function unreadMessages(user_id: Number) {
-    //TODO: round the comparison to the last minute ignoring the seconds and what comes after that
     const dbRes = await postgresClient.query(
         `SELECT m.sender_id, count(m.id) FROM messages m
         LEFT JOIN last_seen ls ON ls.user_id = $1 and ls.other_user_id = m.sender_id 
@@ -30,4 +32,20 @@ export async function unreadMessages(user_id: Number) {
     )
     
     return dbRes.rows
+}
+
+export async function getMessageById(id: Number) {
+    if(!id) {
+        return
+    }
+
+    return await postgresClient.query(
+        `SELECT * FROM messages WHERE id = $1`, [id]
+    )
+}
+
+export async function getMessageByClientId(clientId: string) {
+    return await postgresClient.query(
+        `SELECT * FROM messages WHERE client_msg_id = $1`, [clientId]
+    )
 }

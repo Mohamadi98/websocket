@@ -56,7 +56,14 @@
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
 
-            if (data.type === "chat_message") {
+            if (data.type === "message_chat") {
+
+                // message deliverey ack to the server
+                const deliveredPayload = {
+                    type: 'message_delivered',
+                    message_id: data.message_id
+                }
+                ws.send(JSON.stringify(deliveredPayload))
 
                 // Case 1: no chat open → open it
                 if (activeChatUserId === null) {
@@ -75,6 +82,14 @@
                 // Case 3: message from another user
                 console.log(`New message from User ${data.sender_id}`);
             }
+
+            if(data.type === 'message_ack') {
+                console.log('message ack: ', data)
+            }
+
+            if(data.type === 'message_delivered_ack') {
+                console.log('deliverey ack: ', data)
+            }
         };
 
         ws.onclose = () => {
@@ -89,7 +104,7 @@
         
         function markAsReadViaWS(sender_id) {
             const payload = {
-                type: 'seen',
+                type: 'message_seen',
                 recipient_id: sender_id,
                 message: ''
             }
@@ -154,9 +169,10 @@
             }
 
             const payload = {
-                type: "chat_message",
+                type: "message_chat",
                 recipient_id: activeChatUserId,
-                message: message
+                message: message,
+                client_msg_id: crypto.randomUUID()
             };
 
             ws.send(JSON.stringify(payload));
